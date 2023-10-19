@@ -1,0 +1,5 @@
+runs/
+data/images/lerins/
+
+yolov8*
+*.zip
