@@ -1,0 +1,4 @@
+Class 1: 0 - 22
+Class 2: 22 - 39
+Class 3: 39 - 79
+Class 4: 79 - inf
