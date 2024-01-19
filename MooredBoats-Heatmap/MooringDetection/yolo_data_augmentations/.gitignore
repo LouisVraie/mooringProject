@@ -1,7 +1,0 @@
-test.py
-get_yolo_aug.py
-.DS_Store
-
-bb_images/*
-out-aug-ds/images/*
-out-aug-ds/labels/*

@@ -1,0 +1,7 @@
+path: D:/Devs/M1/Project/Mooring/MooringDetection/data # dataset root dir
+train: images/mergeTrain # train images (relative to 'path')
+val:  images/mergeTrain # val images (relative to 'path')
+
+names:
+  0: mooredBoat
+  1: movingBoat

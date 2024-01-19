@@ -1,7 +1,0 @@
-inp_img_pth : ../data/images/validationSet
-inp_lab_pth : ../data/labels/validationSet
-out_img_pth : out-aug-ds/images
-out_lab_pth : out-aug-ds/labels
-out_img_w_bb_pth : bb-image
-transformed_file_name : aug_out
-CLASSES : [mooredBoat, movingBoat]

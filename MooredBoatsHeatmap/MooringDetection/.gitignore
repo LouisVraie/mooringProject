@@ -1,0 +1,14 @@
+__pycache__/
+.vscode/
+data/lerins/
+data/dataset/
+data/*
+meta/
+runs/
+
+metrics.py
+rotated.jpg
+yolov8*
+*.zip
+*.csv
+*.rar
