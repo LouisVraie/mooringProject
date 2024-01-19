@@ -11,4 +11,5 @@ rotated.jpg
 yolov8*
 *.zip
 *.csv
+!model/*/*.csv
 *.rar
