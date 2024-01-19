@@ -9,7 +9,7 @@ To generate the csv files run `predict.py` by given at the begining of the file 
 ## Main files / folders of the project
 
 - `config/` : contains configurations files for YOLOv8 training
-- `data/` : all the data containing images and labels in the yolo format (download the orginal ones from OneDrive)
+- `data/` : all the data containing images and labels in the yolo format (download the original ones from OneDrive)
   - `data/images/` : folder containing folders with train or validation images
   - `data/labels/` : folder containing folders with train or validation labels of the related images of `data/images/`
 - `model/` : contains the best model
@@ -23,4 +23,4 @@ To generate the csv files run `predict.py` by given at the begining of the file 
 
 
 ## Credits
-Originally made by **[Louis Vraie](https://github.com/LouisVraie/)** for a multidisciplinary research project at **Côte d'Azur Unversity, France**
+Originally made by **[Louis Vraie](https://github.com/LouisVraie/)** for a multidisciplinary research project at **Côte d'Azur University, France**
