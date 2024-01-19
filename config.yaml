@@ -1,7 +1,10 @@
-path: D:/Devs/M1/Project/Mooring/data # dataset root dir
-train: images/train # train images (relative to 'path')
-val:  images/train # val images (relative to 'path')
+path: C:/Users/lotus/Desktop/Mooring_Project/code/data  # dataset root dir
+train: images/train
+val: images/val
 
+# Classes
 names:
-  0: mooringBoat
-  1: movingBoat
+  0: MB   #Motor Boats
+  1: MoB  #Moving Boats
+  2: SB   #Sailing Boats
+
