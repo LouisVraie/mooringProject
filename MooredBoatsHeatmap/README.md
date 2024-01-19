@@ -10,4 +10,4 @@ In this part of the project you have 2 folders to obtain the moored boats heatma
 
 ## Credits
 
-This part was orginally made by **[Louis Vraie](https://github.com/LouisVraie/)**.
+This part was originally made by **[Louis Vraie](https://github.com/LouisVraie/)**.
