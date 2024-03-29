@@ -33,7 +33,8 @@ def show_box(box, ax):
     ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='green', facecolor=(0,0,0,0), lw=2))  
 
 #lire l'image
-imageLue = Image.open("image_zones_claires_remplacees.jpg")
+# imageLue = Image.open("image_zones_claires_remplacees.jpg")
+imageLue = Image.open("superposed_image.jpg")
 
 #taille de l'image
 width, height = imageLue.size
@@ -51,10 +52,10 @@ img_res = imageLue.crop((left, top, right, bottom))
 #sauvegarder l'image réduite
 img_res.save("reduction_image_2022(t).jpeg")
 
-Image = cv2.imread('reduction_image_2022(t).jpeg')
-Image = cv2.cvtColor(Image, cv2.COLOR_BGR2RGB)
+img_to_segment = cv2.imread('reduction_image_2022(t).jpeg')
+img_to_segment = cv2.cvtColor(img_to_segment, cv2.COLOR_BGR2RGB)
 plt.figure(figsize=(10,10))
-plt.imshow(Image)
+plt.imshow(img_to_segment)
 plt.axis('on')
 plt.show()
 
@@ -64,7 +65,7 @@ sys.path.append("..")
 sam_checkpoint = "sam_vit_h_4b8939.pth"
 model_type = "vit_h"
 
-device = "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
 sam.to(device=device)
@@ -72,11 +73,11 @@ sam.to(device=device)
 predictor = SamPredictor(sam)
 
 #put a pointer on the image to identifiate the posidonia
-predictor.set_image(Image)
+predictor.set_image(img_to_segment)
 input_point = np.array([[100,400],[700,400]])
 input_label = np.array([1,1])
 plt.figure(figsize=(10,10))
-plt.imshow(Image)
+plt.imshow(img_to_segment)
 show_points(input_point, input_label, plt.gca())
 plt.axis('on')
 plt.show()  
@@ -92,7 +93,7 @@ masks, scores, logits = predictor.predict(
 #print the generated masks
 for i, (mask, score) in enumerate(zip(masks, scores)):
     plt.figure(figsize=(10,10))
-    plt.imshow(Image)
+    plt.imshow(img_to_segment)
     show_mask(mask, plt.gca())
     
     show_points(input_point, input_label, plt.gca())
