@@ -54,6 +54,9 @@ img_res.save("reduction_image_2022(t).jpeg")
 
 img_to_segment = cv2.imread('reduction_image_2022(t).jpeg')
 img_to_segment = cv2.cvtColor(img_to_segment, cv2.COLOR_BGR2RGB)
+height, width = img_to_segment.shape[:2]
+point_width_offset = width // 6
+
 plt.figure(figsize=(10,10))
 plt.imshow(img_to_segment)
 plt.axis('on')
@@ -74,7 +77,7 @@ predictor = SamPredictor(sam)
 
 #put a pointer on the image to identifiate the posidonia
 predictor.set_image(img_to_segment)
-input_point = np.array([[100,400],[700,400]])
+input_point = np.array([[point_width_offset,height/2],[width-point_width_offset,height/2]])
 input_label = np.array([1,1])
 plt.figure(figsize=(10,10))
 plt.imshow(img_to_segment)

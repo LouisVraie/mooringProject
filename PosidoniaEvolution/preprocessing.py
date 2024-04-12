@@ -2,22 +2,36 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+import time
 
-def get_main_color(image: np.ndarray) -> tuple:
+from contours import apply_edges
 
-    # Calculate the RGB histogram
-    rgb_histogram, rgb_bins = np.histogramdd(image.reshape(-1, 3), bins=256, range=[(0, 256), (0, 256), (0, 256)])
 
-    # Flatten the 3D RGB histogram into a 1D array
-    rgb_histogram = np.array([val for sublist in rgb_histogram for val in sublist])
+def get_main_color(image: np.ndarray, is_grayscale: bool=False) -> tuple:
 
-    # Get the most common RGB color (the index with the highest value)
-    most_common_color_index = np.argmax(rgb_histogram)
+    if not is_grayscale:
+        # Calculate the RGB histogram
+        rgb_histogram, rgb_bins = np.histogramdd(image.reshape(-1, 3), bins=256, range=[(0, 256), (0, 256), (0, 256)])
 
-    # Get the RGB values of the most common color
-    r, g, b = most_common_color_index // (256 ** 2), most_common_color_index // 256 % 256, most_common_color_index % 256
+        # Flatten the 3D RGB histogram into a 1D array
+        rgb_histogram = np.array([val for sublist in rgb_histogram for val in sublist])
 
-    return r, g, b
+        # Get the most common RGB color (the index with the highest value)
+        most_common_color_index = np.argmax(rgb_histogram)
+
+        # Get the RGB values of the most common color
+        r, g, b = most_common_color_index // (256 ** 2), most_common_color_index // 256 % 256, most_common_color_index % 256
+
+        return r, g, b
+    else:
+        # Calculate the grayscale histogram
+        grayscale_histogram, grayscale_bins = np.histogram(image, bins=256, range=(0, 256))
+
+        # Get the most common grayscale color (the index with the highest value)
+        most_common_color_index = np.argmax(grayscale_histogram)
+
+        # Get the grayscale value of the most common color
+        return most_common_color_index
 
 def display_rgb_color(rgb_color: tuple):
     """
@@ -80,59 +94,130 @@ def apply_blue_mask(image: np.ndarray, blue_lower: list[int] = [80, 40, 40], blu
 
     # Display the original image and the blue-filtered image
     # cv2.imshow('Blue-Filtered Image', image_blue)
-    
+    # cv2.waitKey(0)
+    # exit()
     # Return the blue-filtered image in normal RGB color space
     return image_blue
 
-def get_main_color_around_pixel(image, default_color, x, y, radius):
-    # Extract the frame around the pixel
-    frame = image[max(0, y - radius):min(image.shape[0], y + radius),
-                  max(0, x - radius):min(image.shape[1], x + radius)]
-    
-    # Convert the frame into a one-dimensional list of RGB pixels
-    pixels = frame.reshape(-1, 3)
-    
-    # Count occurrences of each color in the frame
-    unique_colors, counts = np.unique(pixels, axis=0, return_counts=True)
-    
-    if len(counts) == 0:
-        # No unique colors found in the region, return a default color
-        return default_color
-    elif len(counts) == 1:
-        # Only one unique color found in the region, return that color if its not black
-        if tuple(unique_colors[0]) != (0, 0, 0):
-            return unique_colors[0]
-        else:
-            return default_color
-    else:
-        # Find the main color (excluding the color of the central pixel)
-        max_count_idx = np.argmax(counts)
-        main_color = unique_colors[max_count_idx]
-        second_max_count_idx = np.argsort(counts)[-2]
-        second_max_color = unique_colors[second_max_count_idx]
-        
-        # If the two most common colors have the same count, return a default color
-        if counts[max_count_idx] == counts[second_max_count_idx]:
-            if tuple(main_color) == default_color:
-                return second_max_color
-            else:
-                return main_color
+def get_main_color_around_pixel(image, default_color, x, y, radius, is_grayscale=False):
+    """
+    Get the main color around a pixel within a given radius.
 
-    # Find the main color (excluding the color of the central pixel and the default color) 
-    main_color = unique_colors[np.argmax(counts[counts != np.max(counts)])]
+    Args:
+        image (numpy.ndarray): The input image.
+        default_color (int or tuple): The default color. If the function fails to detect any distinct color,
+            this default color will be returned.
+        x (int): The x-coordinate of the pixel.
+        y (int): The y-coordinate of the pixel.
+        radius (int): The radius around the pixel to consider.
+        is_grayscale (bool, optional): Whether the image is grayscale. Defaults to False.
+
+    Returns:
+        int or tuple: The main color around the pixel. This could be a grayscale intensity value if the image is grayscale,
+            or an RGB tuple if the image is in color.
+    """
+    # Get the height and width of the image based on whether it's grayscale or color
+    if is_grayscale:
+        h, w = image.shape
+    else:
+        h, w, _ = image.shape
+
+    # Define the boundaries of the frame around the pixel
+    ymin = max(0, y - radius)
+    ymax = min(h, y + radius + 1)
+    xmin = max(0, x - radius)
+    xmax = min(w, x + radius + 1)
+
+    # Extract the frame around the pixel
+    frame = image[ymin:ymax, xmin:xmax]
+
+    # Get unique colors and their counts in the frame
+    unique_colors, counts = np.unique(frame, return_counts=True)
+
+    # If no unique colors are found, return the default color
+    if len(unique_colors) == 0:
+        return default_color
+    # If only one unique color is found or two unique colors are found with one being black,
+    # return the default color if it's black, otherwise return the unique color
+    elif len(unique_colors) == 1 or (len(unique_colors) == 2 and unique_colors[0] == 0):
+        return default_color if unique_colors[0] == 0 else unique_colors[0]
+    else:
+        # Find the color with the maximum count
+        max_count_idx = np.argmax(counts)
+        max_color = unique_colors[max_count_idx]
+        max_count = counts[max_count_idx]
+
+        # Find the color with the second maximum count
+        second_max_count = 0
+        second_max_color = None
+        for i, count in enumerate(counts):
+            # Ensure proper comparison, especially when dealing with RGB colors
+            if count > second_max_count and not np.array_equal(unique_colors[i], default_color) and not np.array_equal(unique_colors[i], max_color):
+                second_max_count = count
+                second_max_color = unique_colors[i]
+
+        # If the second maximum count is equal to the maximum count, return the second maximum color,
+        # otherwise return the main color
+        return second_max_color if max_count == second_max_count else max_color
+
     
-    return main_color
+def replace_main_color(image: np.ndarray, main_color: tuple[int, int, int], radius: int = 5, is_grayscale: bool = False):
     
-def replace_main_color(image: np.ndarray, main_color: tuple[int, int, int], radius: int = 5):
-    # result = image.copy()
+    if is_grayscale:
+        h, w = image.shape
+        image = np.expand_dims(image, axis=-1)  # Add channel dimension
+        main_color = (main_color[0],) * 3  # Convert main_color to grayscale tuple for comparison
+    else:
+        h, w, _ = image.shape
+    main_color = np.array(main_color)  # Convert main_color to numpy array for comparison
+    
+    # Generate meshgrid of coordinates for each pixel in the image
+    y_coords, x_coords = np.ogrid[radius:h-radius, radius:w-radius]
+    
+    # Find indices where image equals main_color
+    main_color_indices = np.where(np.all(image[y_coords, x_coords] == main_color, axis=-1))
+
+    # Extract x and y indices
+    y_indices, x_indices = main_color_indices
+    
+    # Replace main color with most common color around each pixel
+    for y, x in zip(y_indices, x_indices):
+        image[y, x] = get_main_color_around_pixel(image, main_color, x, y, radius)
+    
+    return image.squeeze() if is_grayscale else image
+
+
+def replace_bright_pixels(image: np.ndarray, threshold: int = 80):
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Get the main color of the image
+    main_color = get_main_color(gray, is_grayscale=True)
+    print(f'The main color of the image is: {main_color}')
+    
+    # Get the indices of bright pixels
+    bright_indices = gray > threshold
+    
+    # Replace the bright pixels with the main color
+    gray[bright_indices] = main_color
+
     # Replace the main color with the most common color around each pixel without taking the main color into account
-    for y in range(radius, image.shape[0] - radius):
-        for x in range(radius, image.shape[1] - radius):
-            if np.all(image[y, x] == main_color):
-                image[y, x] = get_main_color_around_pixel(image, main_color, x, y, radius)
-                
-    return image
-                
+    replaced_image = replace_main_color(gray, (main_color, main_color, main_color), radius=5, is_grayscale=True)
+    
+    # Noise factor must be odd and greater than 1 and take into account image width 
+    noise_factor = 3
+    image_width_factor = gray.shape[1] // 1000
+    noise_factor = noise_factor + image_width_factor 
+    if noise_factor % 2 == 0:
+        noise_factor += 1
+    print(f'Noise factor: {noise_factor}')
+    
+    # Remove the noise
+    replaced_image = cv2.medianBlur(replaced_image, noise_factor)
+    # Return the image with the bright pixels replaced in grayscale
+    return replaced_image 
+    
+    
 def remplacer_zones_claires_par_couleur(image: np.ndarray, x=0, y=0, seuil_clair=20, seuil_sombre=45):
 
     # main_color = extraire_couleur(image_path, x, y)
@@ -157,14 +242,14 @@ def remplacer_zones_claires_par_couleur(image: np.ndarray, x=0, y=0, seuil_clair
     
     # Thresholding to segment shadows
 
-    cv2.imshow('Image avec les zones claires remplacées 1', image)
+    # cv2.imshow('Image avec les zones claires remplacées 1', image)
     # cv2.waitKey(0)
     # exit()
     
     # Replace the main color with the most common color around each pixel without taking the main color into account
     replaced_image = replace_main_color(image, main_color, radius=20)
     
-    cv2.imshow('Image avec les zones claires remplacées 2', replaced_image)
+    # cv2.imshow('Image avec les zones claires remplacées 2', replaced_image)
 
     # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # _, binary = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY)
@@ -173,9 +258,9 @@ def remplacer_zones_claires_par_couleur(image: np.ndarray, x=0, y=0, seuil_clair
     # Remove the noise
     replaced_image = cv2.medianBlur(replaced_image, 3)
     
-    # Adjust the contrast and brightness
-    alpha = 1.2  # Contrast factor
-    beta = 5    # Brightness factor
+    # Adjust the contrast and brightness on other pixels than black
+    alpha = 1.8  # Contrast factor
+    beta = 15    # Brightness factor
     image_array = cv2.convertScaleAbs(replaced_image, alpha=alpha, beta=beta)
     
     # Combine original and modified images by fusion (superposition)
@@ -185,7 +270,7 @@ def remplacer_zones_claires_par_couleur(image: np.ndarray, x=0, y=0, seuil_clair
     image_resultat = image_array
 
     # Afficher l'image originale et l'image résultante
-    cv2.imshow("Image avec les zones claires remplacées", image_resultat)
+    # cv2.imshow("Image avec les zones claires remplacées", image_resultat)
 
     # Attendre une touche pour fermer la fenêtre
     cv2.waitKey(0)
@@ -198,20 +283,30 @@ def remplacer_zones_claires_par_couleur(image: np.ndarray, x=0, y=0, seuil_clair
 
 
 if __name__ == "__main__":
+    start_time = time.time()
     # Charger l'image originale
-    original_image=cv2.imread("image2022.jpeg")
-    # original_image=cv2.imread("lerins2018.jpeg")
+    # original_image=cv2.imread("image2022.jpeg")
+    original_image=cv2.imread("./images/googleEarth/lerins2019-09.png")
+    is_grayscale = True
     
-    # Change image contrast and brightness
-    # alpha = 1.1 # Contrast factor
-    # beta = 3    # Brightness factor
-    # original_image = cv2.convertScaleAbs(original_image, alpha=alpha, beta=beta)
+    if is_grayscale:
+        replaced_image = replace_bright_pixels(original_image)
+        # Display the image with the bright pixels replaced
+        # plt.figure(figsize=(12, 6))
+        # plt.imshow(replaced_image, cmap='gray')
+        # plt.show()
+        
+        apply_edges(replaced_image, boat_threshold=50, edges_low_threshold=36, edges_high_threshold=38, edges_presence=0.5, is_grayscale=True)
     
-    # main_color = get_main_color(original_image)
-    # print(f'The main color of the image is: {main_color}')
-    # cv2.imshow('Contrast and Brightness Adjusted Image', original_image)
-    # cv2.waitKey(0)
-    # exit()
-    width, height = original_image.shape[:2]
+    else:
+        # Color
+        width, height = original_image.shape[:2]
 
-    remplacer_zones_claires_par_couleur(original_image, width/2, height-100, 50)
+        replaced_image = remplacer_zones_claires_par_couleur(original_image, width/2, height-100, 50)
+        
+        apply_edges(replaced_image)
+        
+    end_time = time.time()
+    print(f"Execution time: {(end_time - start_time):.4f} seconds")
+        
+    

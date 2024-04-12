@@ -24,10 +24,13 @@ def build_image(image, title='Edges', cmap_type=None):
   plt.title(title)
   plt.axis('on')
 
-def get_edges(image, low_threshold=85, high_threshold=95, step=1, edge_presence = 0.5, edge_detection='sobel'):
-  image_grayscale = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+def get_edges(image, low_threshold=85, high_threshold=95, step=1, edge_presence = 0.5, edge_detection='sobel', is_grayscale=False):
+  if is_grayscale:
+    image_grayscale = image
+  else:
+    image_grayscale = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
   edges = []
-  
+
   # Get the result through low and high thresholding to get real edges following the step
   for i in range(low_threshold, high_threshold, step):
 
@@ -48,12 +51,13 @@ def get_edges(image, low_threshold=85, high_threshold=95, step=1, edge_presence 
   
   # For each pixel of the image list count the number of edges detected
   edges = np.sum(edges, axis=0)
-    
+  
   # get the edges presence
   edges_min_presence = (high_threshold - low_threshold) * (edge_presence)
   
   # Convert the data to grayscale between 0 and 255
   edges = cv2.normalize(edges, None, 0, (high_threshold - low_threshold), cv2.NORM_MINMAX, cv2.CV_8U)
+
   # save in txt file the edges
   np.savetxt('edges.txt', edges, fmt='%d')
   # if the pixel has more than edges_min_presence value, it is an edge
@@ -67,67 +71,94 @@ def get_edges(image, low_threshold=85, high_threshold=95, step=1, edge_presence 
   edges_normalized = cv2.bitwise_not(edges_normalized)
   return edges_normalized
 
-# Load your image in RGB colors
-# image = cv2.imread('image2022.jpeg')
-image = cv2.imread('image_zones_claires_remplacees.jpg')
-image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-# show_image(image, 'Original Image')
+def mean_brightness_contrast(image):
+  # Convert the image to grayscale
+  gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+  
+  # Calculate the mean brightness and contrast
+  mean_brightness = np.mean(gray)
+  contrast = np.std(gray)
+  
+  print("Mean Brightness:", mean_brightness)
+  print("Mean Contrast:", contrast)
+  
+  return mean_brightness, contrast
 
-# Define contrast and brightness adjustment parameters
-# alpha = 1.5  # Contrast factor
-alpha = 1.5  # Contrast factor
-# beta = 30    # Brightness factor
-beta = 10    # Brightness factor
+def adjust_brightness_contrast(image, target_brightness, target_contrast):
+  # Compute the current brightness and contrast of the image
+  current_brightness = np.mean(image)
+  current_contrast = np.std(image)
+  
+  # Compute the adjustment values to reach the target values by looking at only pixels with high blue values
+  brightness_adjustment = target_brightness - current_brightness
+  contrast_adjustment = target_contrast / current_contrast
+  
+  # Apply the brightness and contrast adjustments
+  adjusted_image = image.astype(np.float32) + brightness_adjustment
+  adjusted_image = adjusted_image * contrast_adjustment
+  
+  # Clip the values to ensure they are within the valid range [0, 255]
+  adjusted_image = np.clip(adjusted_image, 0, 255)
+  
+  # Convert the image back to the uint8 data type
+  adjusted_image = adjusted_image.astype(np.uint8)
+  
+  return adjusted_image
 
-# Adjust the contrast and brightness
-image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+def apply_edges(image, boat_threshold: int=245, edges_low_threshold: int = 85, edges_high_threshold: int = 95, edges_presence: float= 0.5, is_grayscale=False):
+  
+  if is_grayscale:
+    black = 0
+  else:
+    # Convert the image to RGB colors
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    black = [0, 0, 0]
+  # image = adjust_brightness_contrast(image, 100, 31)
+  
+  # # Get the mean brightness and contrast of the image
+  # mean_brightness_contrast(image)
+  
+  # Remove the noise
+  image = cv2.medianBlur(image, 3)
 
-# show_two_images(image, 'Original Image', image_c, 'Contrast and Brightness Adjusted Image')
+  # Get the edges using edge detection
+  edges_normalized = get_edges(image, low_threshold=edges_low_threshold, high_threshold=edges_high_threshold, edge_presence=edges_presence, is_grayscale=is_grayscale)
 
-# Remove the noise
-image = cv2.medianBlur(image, 3)
+  # Apply the threshold
+  edges_normalized[edges_normalized < boat_threshold] = 0
+  edges_normalized[edges_normalized >= boat_threshold] = 255
+  # edges_normalized[(edges_normalized <= boat_threshold) & (edges_normalized > sand_threshold)] = 128
 
-# show_two_images(image, 'Original Image', image_denoize, 'Denoized Image')
+  # Remove the noise
+  # edges_normalized = cv2.medianBlur(edges_normalized, 1)
+  
+  # Save the image of the edges
+  cv2.imwrite('edges_normalized.jpg', edges_normalized)
+  
+  # fuze the original image with the edges
+  superposed_image = image.copy()
+  
+  if is_grayscale:
+    superposed_image[edges_normalized == 255] = (superposed_image[edges_normalized == 255])
+  else:
+    # If the pixel is not an edge, the pixel value is the mean of the original and the edge
+    superposed_image[edges_normalized == 255] = (superposed_image[edges_normalized == 255] + black) / 2
+  
+  # If the pixel is an edge, the pixel value is black
+  superposed_image[edges_normalized == 0] = black
+  # superposed_image[edges_normalized == 128] = [255, 0, 0]
+  
+  if not is_grayscale:
+    # Convert the image to BGR colors
+    superposed_image = cv2.cvtColor(superposed_image, cv2.COLOR_RGB2BGR)
 
-# Get the edges using edge detection
-edges_normalized = get_edges(image)
+  # Save the image
+  cv2.imwrite('superposed_image.jpg', superposed_image)
+  
+if __name__ == '__main__':
+  # Load your image in RGB colors
+  # image = cv2.imread('image2022.jpeg')
+  # image = cv2.imread('lerins2019.jpeg')
+  image = cv2.imread('image_zones_claires_remplacees.jpg')
 
-# show_image(edges_normalized, 'Edges normalized')
-
-# Replace with the threshold value you want
-boat_threshold = 245
-# sand_threshold = 10
-
-# Apply the threshold
-edges_normalized[edges_normalized < boat_threshold] = 0
-edges_normalized[edges_normalized >= boat_threshold] = 255
-# edges_normalized[(edges_normalized <= boat_threshold) & (edges_normalized > sand_threshold)] = 128
-
-# Remove the noise
-# edges_normalized = cv2.medianBlur(edges_normalized, 1)
-
-# fuze the original image with the edges
-superposed_image = image.copy()
-# Remove the noise
-# superposed_image = cv2.medianBlur(superposed_image, 5)
-
-# If the pixel is not an edge, the pixel value is the mean of the original and the edge
-superposed_image[edges_normalized == 255] = (superposed_image[edges_normalized == 255] + [0, 0, 0]) / 2
-# If the pixel is an edge, the pixel value is black
-superposed_image[edges_normalized == 0] = [0, 0, 0]
-# superposed_image[edges_normalized == 128] = [255, 0, 0]
-
-# Remove the noise
-# superposed_image = cv2.medianBlur(superposed_image, 3)
-# Show original image in color
-# show_image(image, 'Original Image')
-
-# show_image(edges, 'Sobel Edges')
-# show_two_images(edges, 'Sobel Edges', edges_scharr, 'Scharr Edges')
-
-# Show the original image and the edges
-# show_two_images(edges, 'Edges', edges_normalized, 'Edges normalized')
-
-# Save the image
-cv2.imwrite('edges_normalized.jpg', edges_normalized)
-cv2.imwrite('superposed_image.jpg', cv2.cvtColor(superposed_image, cv2.COLOR_RGB2BGR))
+  apply_edges(image)
