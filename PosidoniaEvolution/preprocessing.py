@@ -286,7 +286,7 @@ if __name__ == "__main__":
     start_time = time.time()
     # Charger l'image originale
     # original_image=cv2.imread("image2022.jpeg")
-    original_image=cv2.imread("./images/googleEarth/lerins2019-09.png")
+    original_image=cv2.imread("./images/googleEarth/lerins2019-09-28.png")
     is_grayscale = True
     
     if is_grayscale:
