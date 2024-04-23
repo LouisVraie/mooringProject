@@ -59,7 +59,7 @@ def get_edges(image, low_threshold=85, high_threshold=95, step=1, edge_presence 
   edges = cv2.normalize(edges, None, 0, (high_threshold - low_threshold), cv2.NORM_MINMAX, cv2.CV_8U)
 
   # save in txt file the edges
-  np.savetxt('edges.txt', edges, fmt='%d')
+  # np.savetxt('edges.txt', edges, fmt='%d')
   # if the pixel has more than edges_min_presence value, it is an edge
   edges[edges < edges_min_presence] = 0
   edges[edges >= edges_min_presence] = 255
@@ -152,8 +152,7 @@ def apply_edges(image, boat_threshold: int=245, edges_low_threshold: int = 85, e
     # Convert the image to BGR colors
     superposed_image = cv2.cvtColor(superposed_image, cv2.COLOR_RGB2BGR)
 
-  # Save the image
-  cv2.imwrite('superposed_image.jpg', superposed_image)
+  return superposed_image
   
 if __name__ == '__main__':
   # Load your image in RGB colors
@@ -161,4 +160,4 @@ if __name__ == '__main__':
   # image = cv2.imread('lerins2019.jpeg')
   image = cv2.imread('image_zones_claires_remplacees.jpg')
 
-  apply_edges(image)
+  apply_edges(image, boat_threshold=100, edges_low_threshold=55, edges_high_threshold=59, edges_presence=0.5, is_grayscale=True)

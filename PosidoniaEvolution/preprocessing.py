@@ -3,9 +3,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import time
+import os
 
 from contours import apply_edges
 
+SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+IMG_DIR = os.path.join(SCRIPT_PATH, "images")
+GOOGLE_EARTH_DIR = os.path.join(IMG_DIR, "googleEarth")
+PREPROCESSED_DIR = os.path.join(IMG_DIR, "preprocessed")
+
+# Create a dictionary to store path of image and related parameters
+IMAGES = {
+    1: {"name": "lerins2004-12-31.png", "isGoogleEarth": True, "is_grayscale": True, "threshold": 150, "edges_low_threshold": 52, "edges_high_threshold": 55, "edges_presence": 0.5},
+    2: {"name": "lerins2014-09-26.png", "isGoogleEarth": True, "is_grayscale": True, "threshold": 150, "edges_low_threshold": 55, "edges_high_threshold": 59, "edges_presence": 0.5},
+    3: {"name": "lerins2015-06-17.png", "isGoogleEarth": True, "is_grayscale": True, "threshold": 160, "edges_low_threshold": 30, "edges_high_threshold": 35, "edges_presence": 0.5},
+    4: {"name": "lerins2015-06-18.png", "isGoogleEarth": True, "is_grayscale": True, "threshold": 150, "edges_low_threshold": 30, "edges_high_threshold": 35, "edges_presence": 0.5}, # TODO: Test again
+    5: {"name": "lerins2018-04-01.png", "isGoogleEarth": True, "is_grayscale": True, "threshold": 130, "edges_low_threshold": 55, "edges_high_threshold": 59, "edges_presence": 0.5}, # TODO: Test again or see if we keep it
+    6: {"name": "lerins2018-08-20.png", "isGoogleEarth": True, "is_grayscale": True, "threshold": 130, "edges_low_threshold": 45, "edges_high_threshold": 50, "edges_presence": 0.5}, # TODO: Test again or see if we keep it
+    7: {"name": "lerins2019-09-28.png", "isGoogleEarth": True, "is_grayscale": True, "threshold": 130, "edges_low_threshold": 55, "edges_high_threshold": 59, "edges_presence": 0.5},
+    8: {"name": "lerins2022-03-31.png", "isGoogleEarth": True, "is_grayscale": True, "threshold": 160, "edges_low_threshold": 25, "edges_high_threshold": 30, "edges_presence": 0.5},
+    9: {"name": "lerins2022-10-04.png", "isGoogleEarth": True, "is_grayscale": True, "threshold": 160, "edges_low_threshold": 40, "edges_high_threshold": 45, "edges_presence": 0.5},
+}
 
 def get_main_color(image: np.ndarray, is_grayscale: bool=False) -> tuple:
 
@@ -73,6 +91,17 @@ def extraire_couleur(image_path, x, y):
     print("Couleur du pixel à la position ({}, {}): {}".format(x, y, couleur_pixel))
 
     return couleur_pixel
+
+def clahe_norm(img: np.ndarray, clip_limit: float = 2.0, tile_grid_size: tuple[int, int] = (8, 8)) -> np.ndarray:
+    
+    # Check if the image is grayscale
+    if len(img.shape) == 3:
+        # Convert the image to grayscale
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
+    cl1 = clahe.apply(img)
+    return cl1
 
 def apply_blue_mask(image: np.ndarray, blue_lower: list[int] = [80, 40, 40], blue_upper: list[int] = [130, 255, 255]):
     
@@ -191,6 +220,12 @@ def replace_bright_pixels(image: np.ndarray, threshold: int = 80):
     # Convert the image to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+    # Apply CLAHE normalization to the grayscale image
+    gray = clahe_norm(gray, clip_limit=2, tile_grid_size=(32, 32))
+    
+    # Save the normalized image
+    cv2.imwrite("images/normalized_image.jpg", gray)
+    
     # Get the main color of the image
     main_color = get_main_color(gray, is_grayscale=True)
     print(f'The main color of the image is: {main_color}')
@@ -286,17 +321,28 @@ if __name__ == "__main__":
     start_time = time.time()
     # Charger l'image originale
     # original_image=cv2.imread("image2022.jpeg")
-    original_image=cv2.imread("./images/googleEarth/lerins2019-09-28.png")
-    is_grayscale = True
     
-    if is_grayscale:
-        replaced_image = replace_bright_pixels(original_image)
+    image = IMAGES[9]
+    
+    # Build image path
+    if image["isGoogleEarth"]:
+        image_path = os.path.join(GOOGLE_EARTH_DIR, image["name"])
+    else:
+        image_path = os.path.join(IMG_DIR, image["name"])
+    
+    # Load the image
+    original_image=cv2.imread(image_path)
+    
+    if image["is_grayscale"]:
+        replaced_image = replace_bright_pixels(original_image, threshold=image["threshold"])
         # Display the image with the bright pixels replaced
         # plt.figure(figsize=(12, 6))
-        # plt.imshow(replaced_image, cmap='gray')
+        # plt.imshow(replaced_image)
         # plt.show()
+        cv2.imwrite("image_zones_claires_remplacees.jpg", replaced_image)
         
-        apply_edges(replaced_image, boat_threshold=50, edges_low_threshold=36, edges_high_threshold=38, edges_presence=0.5, is_grayscale=True)
+        # apply_edges(replaced_image, boat_threshold=50, edges_low_threshold=36, edges_high_threshold=38, edges_presence=0.5, is_grayscale=True)
+        preprocessed_image = apply_edges(replaced_image, boat_threshold=50, edges_low_threshold=image["edges_low_threshold"], edges_high_threshold=image["edges_high_threshold"], edges_presence=image["edges_presence"], is_grayscale=image["is_grayscale"])
     
     else:
         # Color
@@ -304,8 +350,11 @@ if __name__ == "__main__":
 
         replaced_image = remplacer_zones_claires_par_couleur(original_image, width/2, height-100, 50)
         
-        apply_edges(replaced_image)
+        preprocessed_image = apply_edges(replaced_image)
         
+    # Save the preprocessed image
+    cv2.imwrite(os.path.join(PREPROCESSED_DIR, f"preprocessed_{image['name']}"), preprocessed_image)
+    
     end_time = time.time()
     print(f"Execution time: {(end_time - start_time):.4f} seconds")
         

@@ -1,5 +1,5 @@
 import numpy as np
-
+import os
 import matplotlib.pyplot as plt
 
 import cv2
@@ -11,6 +11,13 @@ from segment_anything import sam_model_registry, SamAutomaticMaskGenerator, SamP
 import sys
 
 import supervision as sv
+
+from preprocessing import PREPROCESSED_DIR, IMAGES
+
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+SAM_CHECKPOINT = "sam_vit_h_4b8939.pth"
+SAM_CHECKPOINT_PATH = os.path.join(SCRIPT_DIR, SAM_CHECKPOINT)
+
 
 def show_mask(mask, ax, random_color=False):
     if random_color:
@@ -33,8 +40,12 @@ def show_box(box, ax):
     ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='green', facecolor=(0,0,0,0), lw=2))  
 
 #lire l'image
+# Get the image
+image_path = os.path.join(PREPROCESSED_DIR, f"preprocessed_{IMAGES[9]['name']}")
+
 # imageLue = Image.open("image_zones_claires_remplacees.jpg")
-imageLue = Image.open("superposed_image.jpg")
+imageLue = Image.open(image_path)
+
 
 #taille de l'image
 width, height = imageLue.size
@@ -65,12 +76,11 @@ plt.show()
 #selecting objects with sam
 sys.path.append("..")
 
-sam_checkpoint = "sam_vit_h_4b8939.pth"
 model_type = "vit_h"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+sam = sam_model_registry[model_type](checkpoint=SAM_CHECKPOINT_PATH)
 sam.to(device=device)
 
 predictor = SamPredictor(sam)
