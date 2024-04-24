@@ -14,7 +14,7 @@ DRONE_FOV = 58.5
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 # IMG_PATH = os.path.join(SCRIPT_PATH, "..", "PosidoniaEvolution", "superposed_image.jpg")
-IMG_PATH = os.path.join(SCRIPT_PATH, "..", "PosidoniaEvolution", "images", "googleEarth", "lerins2019-09-28.png")
+IMG_PATH = os.path.join(SCRIPT_PATH, "..", "PosidoniaEvolution", "images", "superposed_image_no_yellow.png")
 BOATS_GPS_PATH = os.path.join(SCRIPT_PATH, "..", "MooredBoatsHeatmap", "MooringDetection", "noOverlaps_predictResults.csv")
 
 # From the GPS coordinates, place pixels on the image
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     unique_colors, counts = np.unique(heatmap.reshape(-1, 3), axis=0, return_counts=True)
     background_color = unique_colors[np.argmax(counts)]
     
-    # Apply the heatmap to the original image without the background color of the heatmap
+    # Apply the heatmap to the original image without the background color of the heatmap with full opacity
     img_with_heatmap = img.copy()
     img_with_heatmap[heatmap != background_color] = heatmap[heatmap != background_color]
         
