@@ -94,7 +94,7 @@ if __name__ == '__main__':
     
     # Save the heatmap as an image with a colormap
     heatmap = (heatmap * 255).astype(np.uint8)
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_COOL)
 
     # Save the heatmap image
     cv2.imwrite(os.path.join(SCRIPT_PATH, "heatmap.png"), heatmap)
@@ -103,9 +103,10 @@ if __name__ == '__main__':
     unique_colors, counts = np.unique(heatmap.reshape(-1, 3), axis=0, return_counts=True)
     background_color = unique_colors[np.argmax(counts)]
     
-    # Apply the heatmap to the original image without the background color of the heatmap with full opacity
+    # Replace the heatmap pixel to the original image without the background color of the heatmap with full opacity
     img_with_heatmap = img.copy()
-    img_with_heatmap[heatmap != background_color] = heatmap[heatmap != background_color]
-        
+    heatmap_indices = np.where(~np.all(heatmap == background_color, axis=-1))
+    img_with_heatmap[heatmap_indices] = heatmap[heatmap_indices]
+
     # Save the image with the circle drawn
     cv2.imwrite(os.path.join(SCRIPT_PATH,"correlation_image.png"), img_with_heatmap)
