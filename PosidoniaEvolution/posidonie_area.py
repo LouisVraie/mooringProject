@@ -111,17 +111,14 @@ def old_calculations():
     plot_bar_chart(areas_pixel)
     extrapolation(areas)
 
-if __name__ == "__main__":
-    superposed_image = cv2.imread(SUPERPOSED_CLEANED_IMG_PATH)
-    DRONE_ALTITUDE = 1600
-    DRONE_FOV = 58.5
-    IMG_WIDTH = superposed_image.shape[1]
+def calculate_area_in_square_meters(drone_altitude, drone_fov, superposed_image):
+    img_width = superposed_image.shape[1]  # Width of the image
     
     # Calculate the pixel size in meters
-    pixel_size = get_pixel_size(DRONE_ALTITUDE, DRONE_FOV, IMG_WIDTH)
+    pixel_size = get_pixel_size(drone_altitude, drone_fov, img_width)
     print("Pixel size in meters:", pixel_size)
     
-    pixels_colors_count = {}
+    pixels_colors_area = {}
     
     # Define the colors
     colors = {
@@ -136,9 +133,22 @@ if __name__ == "__main__":
 
     # Count the number of pixels for each color
     for color in colors:
-        # Count the number of pixels with the current color and multiply by the pixel size to get the area
-        pixels_colors_count[colors[color]] = np.sum(np.all(pixels == color, axis=1)) * pixel_size
-     
+        # Count the number of pixels with the current color
+        pixel_count = np.sum(np.all(pixels == color, axis=1))
+        # Calculate the area covered by the color (considering perspective distortion)
+        color_area = pixel_count * (pixel_size ** 2)
+        pixels_colors_area[colors[color]] = color_area
+        
+    return pixels_colors_area
+
+if __name__ == "__main__":
+    superposed_image = cv2.imread(SUPERPOSED_CLEANED_IMG_PATH)
+    DRONE_ALTITUDE = 1600
+    # DRONE_FOV = 58.5
+    DRONE_FOV = 70
+    
+    pixels_colors_count = calculate_area_in_square_meters(DRONE_ALTITUDE, DRONE_FOV, superposed_image)
+    
     # Print the number of pixels for each color
     for color, count in pixels_colors_count.items():
         # Print the real area of the color in hectares

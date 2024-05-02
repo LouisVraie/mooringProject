@@ -11,7 +11,9 @@ SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.path.join(SCRIPT_PATH, "model", "best.pt")
 
 # IMAGES_DIR = os.path.join(SCRIPT_PATH, "data", "lerins", "2021 10 ZONE 2")
-IMAGES_DIR = os.path.join(SCRIPT_PATH, "data", "lerins", "2023 09 ZONE 2")
+# IMAGES_DIR = os.path.join(SCRIPT_PATH, "data", "lerins", "2023 09 ZONE 2")
+IMAGES_DIR = os.path.join(SCRIPT_PATH, "data", "lerins", "2021And2023_ZONE2")
+
 # IMAGES_DIR = os.path.join(SCRIPT_PATH, "data", "images", "validationBackground")
 
 # SOURCE = "data/lerins/2023 09 ZONE 2/Zone 2 2pm 1.JPG"
