@@ -6,6 +6,8 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 IMG_DIR = os.path.join(SCRIPT_DIR, "images")
 MASK_DIR = os.path.join(IMG_DIR, "mask")
+SUPERPOSED_IMG_PATH = os.path.join(IMG_DIR, "superposed_image.png")
+SUPERPOSED_CLEANED_IMG_PATH = os.path.join(IMG_DIR, "superposed_image_no_yellow.png")
 
 def old_main():
     img1 = cv2.imread('./images/googleEarth/lerins2019-09-28.png')
@@ -63,7 +65,7 @@ def build_superposition_image():
         superposed_image = cv2.convertScaleAbs(superposed_image)
         # Save the superposed image
         superposed_image = cv2.cvtColor(superposed_image, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(os.path.join(IMG_DIR, "superposed_image.png"), superposed_image)
+        cv2.imwrite(SUPERPOSED_IMG_PATH, superposed_image)
         
         # Remove the yellow pixels
         superposed_image = cv2.cvtColor(superposed_image, cv2.COLOR_BGR2RGB)    
@@ -72,7 +74,7 @@ def build_superposition_image():
         # Save the superposed image without yellow pixels
         superposed_image = cv2.convertScaleAbs(superposed_image)
         superposed_image = cv2.cvtColor(superposed_image, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(os.path.join(IMG_DIR, "superposed_image_no_yellow.png"), superposed_image)
+        cv2.imwrite(SUPERPOSED_CLEANED_IMG_PATH, superposed_image)
 
 if __name__ == '__main__':
     build_superposition_image()
