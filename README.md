@@ -12,9 +12,10 @@ The goal of this project was to create some tools to help MSc MARRES students fo
 
 ## Tools
 - `AnchorHeatmap/` : Creation of a anchor heatmap, made by Laurent Peraldi ;
-- `DetectionAndClassification` : Detection and classification of boats, made by Alireza Foroutan Torkaman ;
+- `CorrelationAnalysis/` : Correlation analysis between results of `MooredBoatsHeatmap` and `PosidoniaEvolution`, made by Louis Vraie ;
+- `DetectionAndClassification/` : Detection and classification of boats, made by Alireza Foroutan Torkaman ;
 - `MooredBoatsHeatmap/` : Creation of a heatmap to represent the moored boats, made by Louis Vraie ;
-- `PosidoniaEvolution/` : Analysis of posidonia evolution through the years, made by Yasmine Boudiaf ;
+- `PosidoniaEvolution/` : Analysis of posidonia evolution through the years, originally made by Yasmine Boudiaf, then updated by Louis Vraie;
 
 
 ## Acknowledgements
